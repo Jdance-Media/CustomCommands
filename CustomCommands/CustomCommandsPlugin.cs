@@ -13,7 +13,7 @@ namespace RestoreMonarchy.CustomCommands
         {
             foreach (CustomCommandConfig commandConfig in Configuration.Instance.CustomCommands)
             {
-                CustomCommand customCommand = new CustomCommand(commandConfig);
+                CustomCommand customCommand = new(commandConfig);
                 R.Commands.Register(customCommand);
 
                 Logger.Log($"Registered custom command {commandConfig.Name} with {commandConfig.Experience} experience, " +

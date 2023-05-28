@@ -28,7 +28,8 @@ namespace RestoreMonarchy.CustomCommands
                         new CustomMessage()
                         {
                             Text = "You received x1 Generator and x2 Portable Gas Cans",
-                            Color = "red"
+                            Color = "red",
+                            IconUrl = "https://unturnedstore.com/api/images/349"
                         }
                     }                    
                 }

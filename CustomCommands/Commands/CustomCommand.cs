@@ -1,8 +1,10 @@
 ﻿using RestoreMonarchy.CustomCommands.Models;
+using RestoreMonarchy.CustomCommands.Storage;
 using Rocket.API;
 using Rocket.Unturned.Chat;
 using Rocket.Unturned.Player;
 using SDG.Unturned;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,7 +12,7 @@ namespace RestoreMonarchy.CustomCommands.Commands
 {
     public class CustomCommand : IRocketCommand
     {
-        private readonly CustomCommandConfig config;
+        public readonly CustomCommandConfig config;
 
         public CustomCommand(CustomCommandConfig config)
         {
@@ -33,6 +35,12 @@ namespace RestoreMonarchy.CustomCommands.Commands
         {
             if (caller is UnturnedPlayer player)
             {
+                if (!Cooldowns.Instance.ValidCooldown(this, player.CSteamID))
+                {
+                    TimeSpan wait = TimeSpan.FromSeconds(config.Cooldown) - (Cooldowns.Instance.GetPlayerCooldown(config.Name, player.CSteamID) - DateTime.Now);
+                    UnturnedChat.Say(caller, CustomCommandsPlugin.Instance.Translate("WaitCooldown", wait.TotalSeconds.ToString()), Color.red);
+                }
+
                 foreach (ushort item in config.Items)
                     player.GiveItem(item, 1);
                 foreach (ushort vehicle in config.Vehicles)
@@ -42,7 +50,7 @@ namespace RestoreMonarchy.CustomCommands.Commands
 
                 foreach (CustomMessage msg in config.Messages)
                 {
-                    ChatManager.serverSendMessage(msg.Text, UnturnedChat.GetColorFromName(msg.Color, Color.green), null, player.SteamPlayer(), EChatMode.SAY, msg.IconUrl, true);
+                    ChatManager.serverSendMessage(msg.Text.Replace('{', '<').Replace('}', '>'), UnturnedChat.GetColorFromName(msg.Color, Color.green), null, player.SteamPlayer(), iconURL: msg.IconUrl, useRichTextFormatting: true);
                 }
             }
         }

@@ -14,7 +14,8 @@ namespace RestoreMonarchy.CustomCommands
                 new CustomCommandConfig()
                 {
                     Name = "generator",
-                    Help = "Kit with one generator and two portable gas cans",
+                    Help = "Kit with one generator and two portable gas cans.",
+                    Cooldown = 10,
                     Experience = 0,
                     Items = new ushort[]
                     {
@@ -27,9 +28,9 @@ namespace RestoreMonarchy.CustomCommands
                     {
                         new CustomMessage()
                         {
-                            Text = "You received x1 Generator and x2 Portable Gas Cans",
+                            Text = "{b}You received x1 Generator and x2 Portable Gas Cans{/b}.",
                             Color = "red",
-                            IconUrl = "https://unturnedstore.com/api/images/349"
+                            IconUrl = "https://unturnedstore.com/api/images/3373"
                         }
                     }                    
                 }

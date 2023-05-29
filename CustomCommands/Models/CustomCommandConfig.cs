@@ -8,6 +8,8 @@ namespace RestoreMonarchy.CustomCommands.Models
         public string Name { get; set; }
         [XmlAttribute]
         public string Help { get; set; }
+        [XmlAttribute]
+        public int Cooldown { get; set; }
 
         public uint Experience { get; set; }
         [XmlArrayItem("item")]

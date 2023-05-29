@@ -7,6 +7,7 @@ using Rocket.Core.Logging;
 using Rocket.Core.Plugins;
 using SDG.Unturned;
 using System;
+using System.Collections.Generic;
 
 namespace RestoreMonarchy.CustomCommands
 {
@@ -14,24 +15,30 @@ namespace RestoreMonarchy.CustomCommands
     {
         public static CustomCommandsPlugin Instance { get; private set; }
         public static CustomCommandsConfiguration Config { get; private set; }
+        public List<string> Registered { get; private set; }
 
         protected override void Load()
         {
             Instance = this;
             Config = Configuration.Instance;
             Provider.onCommenceShutdown += Provider_onCommenceShutdown;
+            Registered = new();
             foreach (CustomCommandConfig commandConfig in Configuration.Instance.CustomCommands)
             {
                 CustomCommand customCommand = new(commandConfig);
+                if (Registered.Contains(commandConfig.Name)) { Logger.Log($"Skipped loading custom command {customCommand.Name} due to duplicate");  continue; }
+
                 R.Commands.Register(customCommand);
+                Registered.Add(commandConfig.Name);
 
                 Logger.Log($"Registered custom command {commandConfig.Name} with {commandConfig.Experience} experience, " +
                     $"{commandConfig.Items.Length} items, {commandConfig.Vehicles.Length} vehicles and " +
                     $"{commandConfig.Messages.Length} messages", ConsoleColor.Yellow);
             }
+            Registered = null;
             new Cooldowns();
 
-            Logger.Log($"{Name} 1.23.1.0 has been loaded!", ConsoleColor.Yellow);
+            Logger.Log($"{Name} 1.23.2.0 has been loaded!", ConsoleColor.Yellow);
         }
 
         private void Provider_onCommenceShutdown()

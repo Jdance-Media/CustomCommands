@@ -38,7 +38,7 @@ namespace RestoreMonarchy.CustomCommands
             Registered = null;
             new Cooldowns();
 
-            Logger.Log($"{Name} 1.23.2.0 has been loaded!", ConsoleColor.Yellow);
+            Logger.Log($"{Name} 1.23.4.0 has been loaded!", ConsoleColor.Yellow);
         }
 
         private void Provider_onCommenceShutdown()
@@ -49,8 +49,10 @@ namespace RestoreMonarchy.CustomCommands
         protected override void Unload()
         {
             Cooldowns.Instance.CleanUp();
-            Logger.Log($"{Name} has been loaded!", ConsoleColor.Yellow);
+            Logger.Log($"{Name} has been unloaded!", ConsoleColor.Yellow);
+            Cooldowns.Instance = null;
         }
+
 
         public override TranslationList DefaultTranslations => new()
         {

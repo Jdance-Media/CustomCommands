@@ -35,10 +35,10 @@ namespace RestoreMonarchy.CustomCommands.Commands
         {
             if (caller is UnturnedPlayer player)
             {
-                if (!Cooldowns.Instance.ValidCooldown(this, player.CSteamID))
+                if (!Cooldowns.Instance.CheckValid(config, player.CSteamID))
                 {
-                    TimeSpan wait = TimeSpan.FromSeconds(config.Cooldown) - (Cooldowns.Instance.GetPlayerCooldown(config.Name, player.CSteamID) - DateTime.Now);
-                    UnturnedChat.Say(caller, CustomCommandsPlugin.Instance.Translate("WaitCooldown", wait.TotalSeconds.ToString()), Color.red);
+                    ChatManager.serverSendMessage(CustomCommandsPlugin.Instance.Translate("WaitCooldown", Cooldowns.Instance.SecondsToWait(config, player.CSteamID)), UnturnedChat.GetColorFromName(CustomCommandsPlugin.Config.DefaultMessageColor, Color.green), null, player.SteamPlayer(), iconURL: CustomCommandsPlugin.Config.DefaultIconUrl, useRichTextFormatting: true);
+                    return;
                 }
 
                 foreach (ushort item in config.Items)
@@ -52,6 +52,8 @@ namespace RestoreMonarchy.CustomCommands.Commands
                 {
                     ChatManager.serverSendMessage(msg.Text.Replace('{', '<').Replace('}', '>'), UnturnedChat.GetColorFromName(msg.Color, Color.green), null, player.SteamPlayer(), iconURL: msg.IconUrl, useRichTextFormatting: true);
                 }
+
+                Cooldowns.Instance.SetPlayerCooldown(config.Name, player.CSteamID, true);
             }
         }
     }

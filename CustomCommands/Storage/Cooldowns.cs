@@ -15,7 +15,7 @@ namespace RestoreMonarchy.CustomCommands.Storage
 {
     public class Cooldowns
     {
-        public static Cooldowns Instance { get; private set; }
+        public static Cooldowns Instance { get; set; }
 
         public Dictionary<string, Dictionary<CSteamID, DateTime>> PlayerCooldowns { get; private set; }
 
@@ -24,18 +24,23 @@ namespace RestoreMonarchy.CustomCommands.Storage
             Instance = this;
             PlayerCooldowns = new();
             U.Events.OnPlayerConnected += ProcessPlayerConnect;
-            U.Events.OnPlayerConnected += ProcessPlayerDisconnect;
+            U.Events.OnPlayerDisconnected += ProcessPlayerDisconnect;
 
             foreach (CustomCommandConfig config in CustomCommandsPlugin.Config.CustomCommands)
             {
                 PlayerCooldowns.Add(config.Name, new());
             }
 
+            string dir = Path.Combine(CustomCommandsPlugin.Instance.Directory, "data");
+
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
         }
 
         private void ProcessPlayerDisconnect(UnturnedPlayer player)
         {
             WritePlayerData(player.CSteamID);
+            ClearLoadedData(player.CSteamID);
         }
 
         private void ProcessPlayerConnect(UnturnedPlayer player)
@@ -43,71 +48,91 @@ namespace RestoreMonarchy.CustomCommands.Storage
             ReadPlayerData(player.CSteamID);
         }
 
-        public void ReadPlayerData(CSteamID player)
-        {
-            string path = Path.Combine(CustomCommandsPlugin.Instance.Directory, $"data/{player}/cooldowns.dat");
-            DatFast dat = new(path);
-
-            if (!dat.Safe) return;
-
-            foreach (CustomCommandConfig config in CustomCommandsPlugin.Config.CustomCommands)
-            {
-                var data = dat.ReadNonOrder<DateTime>(config.Name);
-                if (data == default) continue;
-
-                PlayerCooldowns[config.Name].Add(player, data);
-            }
-        }
-
         public void WritePlayerData(CSteamID player)
         {
-            string path = Path.Combine(CustomCommandsPlugin.Instance.Directory, $"data/{player}/cooldowns.dat");
-            DatFast dat = new(path);
-
-            foreach (CustomCommandConfig config in CustomCommandsPlugin.Config.CustomCommands)
+            string dir = Path.Combine(CustomCommandsPlugin.Instance.Directory, $"data/{player}/data.dat");
+            Block block = new();
+            foreach (var entry in PlayerCooldowns)
             {
-                if (!PlayerCooldowns[config.Name].ContainsKey(player)) continue;
-                dat.Write(PlayerCooldowns[config.Name][player]);
-                dat.Save();
+                block.writeString(entry.Key);
+                block.writeInt64(entry.Value[player].Ticks);
+            }
+            ReadWrite.writeBlock(dir, false, false, block);
+        }
+
+        public void ReadPlayerData(CSteamID player)
+        {
+
+            string dir = Path.Combine(CustomCommandsPlugin.Instance.Directory, $"data/{player}/data.dat");
+            if (!File.Exists(dir))
+            {
+                foreach (var entry in PlayerCooldowns)
+                {
+                    PlayerCooldowns[entry.Key].Add(player, default);
+                }
+                return;
+            }
+
+            Block block = ReadWrite.readBlock(dir, false, false, 0);
+            for (byte b = 0; b < PlayerCooldowns.Count; b++)
+            {
+                string command = block.readString();
+                long ticks = block.readInt64();
+
+                if (command != string.Empty)
+                    PlayerCooldowns[command].Add(player, new DateTime(ticks));
+            }
+
+            foreach (var entry in PlayerCooldowns)
+            {
+                if (!entry.Value.ContainsKey(player))
+                {
+                    entry.Value.Add(player, default);
+                }
             }
         }
 
-        public bool ValidCooldown(CustomCommand command, CSteamID player)
+        public void ClearLoadedData(CSteamID player)
         {
-            DateTime current = GetPlayerCooldown(command.Name, player);
-            if ((DateTime.Now - current).TotalSeconds > command.config.Cooldown)
+            foreach (var entry in PlayerCooldowns)
+            {
+                entry.Value.Remove(player);
+            }
+        }
+
+        public bool CheckValid(CustomCommandConfig config, CSteamID player)
+        {
+            TimeSpan time = DateTime.Now - PlayerCooldowns[config.Name][player];
+            if (time.TotalSeconds >= config.Cooldown)
                 return true;
             else
                 return false;
         }
 
-        public DateTime GetPlayerCooldown(string command, CSteamID player)
+        public int SecondsToWait(CustomCommandConfig config, CSteamID player)
         {
-            if (PlayerCooldowns[command].ContainsKey(player))
-                return PlayerCooldowns[command][player];
-            else
-                return default;
+            TimeSpan time = TimeSpan.FromSeconds(config.Cooldown) - (DateTime.Now - PlayerCooldowns[config.Name][player]);
+            return (int)time.TotalSeconds;
         }
 
         public void SetPlayerCooldown(string command, CSteamID player, bool save = false)
         {
-            if (PlayerCooldowns[command].ContainsKey(player)) PlayerCooldowns[command][player] = DateTime.Now;
-            else PlayerCooldowns[command].Add(player, DateTime.Now);
-
+            PlayerCooldowns[command][player] = DateTime.Now;
             if (save)
-                Task.Run(() => WritePlayerData(player));
+                WritePlayerData(player);
         }
+
 
         public void CleanUp()
         {
             foreach (SteamPlayer client in Provider.clients)
             {
                 WritePlayerData(client.playerID.steamID);
+                ClearLoadedData(client.playerID.steamID);
             }
             U.Events.OnPlayerConnected -= ProcessPlayerConnect;
-            U.Events.OnPlayerConnected -= ProcessPlayerDisconnect;
+            U.Events.OnPlayerDisconnected -= ProcessPlayerDisconnect;
             PlayerCooldowns = null;
-            Instance = null;
         }
     }
 }

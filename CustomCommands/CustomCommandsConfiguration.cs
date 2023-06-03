@@ -6,9 +6,13 @@ namespace RestoreMonarchy.CustomCommands
     public class CustomCommandsConfiguration : IRocketPluginConfiguration
     {
         public CustomCommandConfig[] CustomCommands { get; set; }
+        public string DefaultMessageColor { get; set; }
+        public string DefaultIconUrl { get; set; }
 
         public void LoadDefaults()
         {
+            DefaultMessageColor = "red";
+            DefaultIconUrl = "https://unturnedstore.com/api/images/3373";
             CustomCommands = new CustomCommandConfig[]
             {
                 new CustomCommandConfig()
